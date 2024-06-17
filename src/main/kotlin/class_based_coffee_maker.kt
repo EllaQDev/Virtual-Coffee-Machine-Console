@@ -1,4 +1,39 @@
+enum class COFFEE_MAKER_STATE {
+    TAKING_ACTION,
+    TAKING_COFFEE_CHOICE
+}
 class CoffeeMaker(var water: Int, var milk: Int, var beans: Int, var cups: Int, var money: Int) {
+    var state : COFFEE_MAKER_STATE? = null
+    var exitFlag = false
+    init {
+        changeState(COFFEE_MAKER_STATE.TAKING_ACTION)
+    }
+    fun changeState(newState: COFFEE_MAKER_STATE) {
+        state = newState
+        if (state == COFFEE_MAKER_STATE.TAKING_ACTION) {
+            println("Write action (buy, fill, take, remaining, exit): ")
+        } else {
+            println("What do you want to buy? 1 - espresso, 2 - latte, 3 - cappuccino, back - to main menu: ")
+        }
+    }
+    fun terminate() {
+        exitFlag = true
+    }
+    fun registerInput(input: String) {
+        if (state == COFFEE_MAKER_STATE.TAKING_ACTION) {
+            //println("Write action (buy, fill, take, remaining, exit): ")
+            val action = input
+            when (action) {
+                "buy" -> { changeState(COFFEE_MAKER_STATE.TAKING_COFFEE_CHOICE)}
+                "fill" -> restockMachine()
+                "take" -> withdrawFunds()
+                "remaining" -> { displayMachineLevels() ; changeState(COFFEE_MAKER_STATE.TAKING_ACTION) }
+                "exit" -> terminate()
+            }
+        } else {
+            buyDrink(input)
+        }
+    }
     fun determineMaxCups(drink: Drink): Pair<Int, List<Int>> {
         val maxByWater = water/drink.water.factor
         val milkNeeded = drink.milk?.factor ?: 0
@@ -23,10 +58,11 @@ class CoffeeMaker(var water: Int, var milk: Int, var beans: Int, var cups: Int, 
             $$money of money
         """.trimIndent())
     }
-    fun buyDrink() {
-        println("What do you want to buy? 1 - espresso, 2 - latte, 3 - cappuccino, back - to main menu: ")
-        val drinkInput = readln()
+    fun buyDrink(drinkInput: String) {
+
         if (drinkInput == "back") {
+            changeState(COFFEE_MAKER_STATE.TAKING_ACTION)
+            //println("Write action (buy, fill, take, remaining, exit): ")
         } else {
             val drinkNum = drinkInput.toInt()
             val drink : Drink = when (drinkNum) {
@@ -38,6 +74,7 @@ class CoffeeMaker(var water: Int, var milk: Int, var beans: Int, var cups: Int, 
             if (max > 0){
                 println("I have enough resources, making you a coffee!")
                 makeDrink(drink)
+                changeState(COFFEE_MAKER_STATE.TAKING_ACTION)
             } else {
                 val indexOfMissingIng = maxList.indexOf(0)
                 val missingResource = when (indexOfMissingIng) {
@@ -47,6 +84,7 @@ class CoffeeMaker(var water: Int, var milk: Int, var beans: Int, var cups: Int, 
                     else -> "cups"
                 }
                 println("sorry not enough $missingResource!")
+                changeState(COFFEE_MAKER_STATE.TAKING_ACTION)
             }
         }
     }
@@ -68,11 +106,13 @@ class CoffeeMaker(var water: Int, var milk: Int, var beans: Int, var cups: Int, 
         println("Write how many disposable cups you want to add: ")
         this.cups += readln().toInt()
         //displayMachineLevels()
+        changeState(COFFEE_MAKER_STATE.TAKING_ACTION)
     }
     fun withdrawFunds() {
         println("I gave you $$money")
         money = 0
         //displayMachineLevels()
+        changeState(COFFEE_MAKER_STATE.TAKING_ACTION)
     }
 }
 class Coffee(override val water: Ingredient = Ingredient("water",200, "ml"),
@@ -120,15 +160,10 @@ fun main() {
 //    })
     //coffeeMaker.displayMachineLevels()
     //prompt user action
-    while(true) {
-        println("Write action (buy, fill, take, remaining, exit): ")
-        val action = readln()
-        when (action) {
-            "buy" -> coffeeMaker.buyDrink()
-            "fill" -> coffeeMaker.restockMachine()
-            "take" -> coffeeMaker.withdrawFunds()
-            "remaining" -> coffeeMaker.displayMachineLevels()
-            "exit" -> break
-        }
+    while(!coffeeMaker.exitFlag) {
+        //accept user input to first prompt
+        val input = readln()
+        coffeeMaker.registerInput(input)
+
     }
 }
