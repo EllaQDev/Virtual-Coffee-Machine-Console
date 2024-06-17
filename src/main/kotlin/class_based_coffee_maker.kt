@@ -1,5 +1,5 @@
 class CoffeeMaker(var water: Int, var milk: Int, var beans: Int, var cups: Int, var money: Int) {
-    fun determineMaxCups(drink: Drink): Int {
+    fun determineMaxCups(drink: Drink): Pair<Int, List<Int>> {
         val maxByWater = water/drink.water.factor
         val milkNeeded = drink.milk?.factor ?: 0
         //may need to find a more satisfactory solution here, setting max when milk is not in recipe to 9999
@@ -9,7 +9,9 @@ class CoffeeMaker(var water: Int, var milk: Int, var beans: Int, var cups: Int, 
              maxByMilk = milk/milkNeeded
         }
         val maxByBeans = beans/drink.beans.factor
-        return listOf(maxByWater, maxByMilk, maxByBeans).min()
+        val maxByCups = cups/1
+
+        return listOf(maxByWater, maxByMilk, maxByBeans, maxByCups).min() to listOf(maxByWater, maxByMilk, maxByBeans, maxByCups)
     }
     fun displayMachineLevels() {
         println("""
@@ -22,14 +24,31 @@ class CoffeeMaker(var water: Int, var milk: Int, var beans: Int, var cups: Int, 
         """.trimIndent())
     }
     fun buyDrink() {
-        println("What do you want to buy? 1 - espresso, 2 - latte, 3 - cappuccino: ")
-        val drinkNum = readln().toInt()
-        val drink : Drink = when (drinkNum) {
-            1 -> Espresso()
-            2 -> Latte()
-            else -> Cappuccino()
+        println("What do you want to buy? 1 - espresso, 2 - latte, 3 - cappuccino, back - to main menu: ")
+        val drinkInput = readln()
+        if (drinkInput == "back") {
+        } else {
+            val drinkNum = drinkInput.toInt()
+            val drink : Drink = when (drinkNum) {
+                1 -> Espresso()
+                2 -> Latte()
+                else -> Cappuccino()
+            }
+            val (max, maxList) = determineMaxCups(drink)
+            if (max > 0){
+                println("I have enough resources, making you a coffee!")
+                makeDrink(drink)
+            } else {
+                val indexOfMissingIng = maxList.indexOf(0)
+                val missingResource = when (indexOfMissingIng) {
+                    0 -> "water"
+                    1 -> "milk"
+                    2 -> "coffee beans"
+                    else -> "cups"
+                }
+                println("sorry not enough $missingResource!")
+            }
         }
-        makeDrink(drink)
     }
     fun makeDrink(drink: Drink) {
         money += drink.cost
@@ -37,7 +56,7 @@ class CoffeeMaker(var water: Int, var milk: Int, var beans: Int, var cups: Int, 
         milk -= drink.milk?.factor ?: 0
         water -= drink.water.factor
         cups--
-        displayMachineLevels()
+        //displayMachineLevels()
     }
     fun restockMachine() {
         println("Write how many ml of water you want to add: ")
@@ -48,12 +67,12 @@ class CoffeeMaker(var water: Int, var milk: Int, var beans: Int, var cups: Int, 
         this.beans += readln().toInt()
         println("Write how many disposable cups you want to add: ")
         this.cups += readln().toInt()
-        displayMachineLevels()
+        //displayMachineLevels()
     }
     fun withdrawFunds() {
         println("I gave you $$money")
         money = 0
-        displayMachineLevels()
+        //displayMachineLevels()
     }
 }
 class Coffee(override val water: Ingredient = Ingredient("water",200, "ml"),
@@ -91,7 +110,7 @@ fun main() {
     val init_beans = 120
     val init_cups = 9
     val init_money = 550
-    val coffeMaker = CoffeeMaker(init_water, init_milk, init_beans, init_cups, init_money)
+    val coffeeMaker = CoffeeMaker(init_water, init_milk, init_beans, init_cups, init_money)
 //    val max = coffeMaker.determineMaxCups(Coffee())
 //    val diffOrderMax = max - cupsNeeded
 //    println(when {
@@ -99,13 +118,17 @@ fun main() {
 //        diffOrderMax > 0 -> "Yes, I can make that amount of coffee (and even $diffOrderMax more than that)"
 //        else -> "No, I can make only $max cups of coffee"
 //    })
-    coffeMaker.displayMachineLevels()
+    //coffeeMaker.displayMachineLevels()
     //prompt user action
-    println("Write action (buy, fill, take): ")
-    val action = readln()
-    when (action) {
-        "buy" -> coffeMaker.buyDrink()
-        "fill" -> coffeMaker.restockMachine()
-        "take" -> coffeMaker.withdrawFunds()
+    while(true) {
+        println("Write action (buy, fill, take, remaining, exit): ")
+        val action = readln()
+        when (action) {
+            "buy" -> coffeeMaker.buyDrink()
+            "fill" -> coffeeMaker.restockMachine()
+            "take" -> coffeeMaker.withdrawFunds()
+            "remaining" -> coffeeMaker.displayMachineLevels()
+            "exit" -> break
+        }
     }
 }
